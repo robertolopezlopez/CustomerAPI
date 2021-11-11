@@ -7,10 +7,13 @@ import (
 	"api/logging"
 	"api/tracing"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
 	"os"
+
+	"gorm.io/gorm/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,23 +39,59 @@ func SetupRouter() *gin.Engine {
 		c.String(http.StatusOK, "pong")
 	})
 
+	// create a client entry
 	r.POST("/api/clients", createCustomerHandler)
 
-	// Get user value
+	// Get client by id
 	r.GET("/api/clients/:id", getCustomerHandler)
 
+	// Delete client by id
+	r.DELETE("/api/clients/:id", deleteCustomerHandler)
+
+	// Get all clients
+	r.GET("/api/clients/", findCustomersHandler)
+
 	return r
+}
+
+func findCustomersHandler(c *gin.Context) {
+	var customers []customer.Customer
+	tx := db.DB.Find(&customers)
+	if tx.Error == nil {
+		c.IndentedJSON(http.StatusOK, customers)
+	} else {
+		logging.WarnLogger.Printf("error querying the DB: %s\n", tx.Error.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}
+}
+
+func deleteCustomerHandler(c *gin.Context) {
+	id := c.Params.ByName("id")
+
+	var cust customer.Customer
+	tx := db.DB.Delete(&cust, id)
+	if tx.Error == nil {
+		c.Status(http.StatusNoContent)
+	} else {
+		logging.WarnLogger.Printf("error deleting from the DB: %s\n", tx.Error.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}
 }
 
 func getCustomerHandler(c *gin.Context) {
 	id := c.Params.ByName("id")
 
 	var cust customer.Customer
-	value := db.DB.First(&cust, id)
-	if value.Error == nil {
-		c.JSON(http.StatusOK, cust)
+	tx := db.DB.First(&cust, id)
+	if tx.Error == nil {
+		c.IndentedJSON(http.StatusOK, cust)
 	} else {
-		c.AbortWithStatus(http.StatusNotFound)
+		if errors.Is(tx.Error, logger.ErrRecordNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		logging.WarnLogger.Printf("error querying the DB: %s\n", tx.Error.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
 	}
 }
 
@@ -67,13 +106,16 @@ func createCustomerHandler(ctx *gin.Context) {
 		return
 	}
 
-	db.DB.Create(&c)
+	tx := db.DB.Create(&c)
+	if tx.Error != nil {
+		logging.ErrorLogger.Printf("error writing into DB: %s\n", tx.Error.Error())
+		return
+	}
 
 	cs, _ := json.Marshal(c)
 	logging.InfoLogger.Printf("%s : %s", ctx.Request.Header.Get(tracing.XRequestID), string(cs))
 
 	ctx.Status(http.StatusCreated)
-
 }
 
 func main() {
@@ -81,3 +123,6 @@ func main() {
 	// Listen and Server in 0.0.0.0:8080
 	_ = r.Run(":8080")
 }
+
+// TODO CRON https://github.com/robfig/cron
+// TODO MORE TESTS
