@@ -2,18 +2,13 @@ package main
 
 import (
 	"api/authentication"
-	"api/customer"
-	"api/db"
+	"api/handler"
 	"api/logging"
 	"api/tracing"
-	"encoding/json"
-	"errors"
 	"io"
 	"log"
 	"net/http"
 	"os"
-
-	"gorm.io/gorm/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,8 +22,6 @@ func init() {
 }
 
 func SetupRouter() *gin.Engine {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
 	r := gin.Default()
 
 	r.Use(authentication.HeaderAuthMiddleware())
@@ -40,82 +33,18 @@ func SetupRouter() *gin.Engine {
 	})
 
 	// create a client entry
-	r.POST("/api/clients", createCustomerHandler)
+	r.POST("/api/clients", handler.CreateCustomerHandler)
 
 	// Get client by id
-	r.GET("/api/clients/:id", getCustomerHandler)
+	r.GET("/api/clients/:id", handler.GetCustomerHandler)
 
 	// Delete client by id
-	r.DELETE("/api/clients/:id", deleteCustomerHandler)
+	r.DELETE("/api/clients/:id", handler.DeleteCustomerHandler)
 
 	// Get all clients
-	r.GET("/api/clients/", findCustomersHandler)
+	r.GET("/api/clients/", handler.FindCustomersHandler)
 
 	return r
-}
-
-func findCustomersHandler(c *gin.Context) {
-	var customers []customer.Customer
-	tx := db.DB.Find(&customers)
-	if tx.Error == nil {
-		c.IndentedJSON(http.StatusOK, customers)
-	} else {
-		logging.WarnLogger.Printf("error querying the DB: %s\n", tx.Error.Error())
-		c.AbortWithStatus(http.StatusInternalServerError)
-	}
-}
-
-func deleteCustomerHandler(c *gin.Context) {
-	id := c.Params.ByName("id")
-
-	var cust customer.Customer
-	tx := db.DB.Delete(&cust, id)
-	if tx.Error == nil {
-		c.Status(http.StatusNoContent)
-	} else {
-		logging.WarnLogger.Printf("error deleting from the DB: %s\n", tx.Error.Error())
-		c.AbortWithStatus(http.StatusInternalServerError)
-	}
-}
-
-func getCustomerHandler(c *gin.Context) {
-	id := c.Params.ByName("id")
-
-	var cust customer.Customer
-	tx := db.DB.First(&cust, id)
-	if tx.Error == nil {
-		c.IndentedJSON(http.StatusOK, cust)
-	} else {
-		if errors.Is(tx.Error, logger.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-		logging.WarnLogger.Printf("error querying the DB: %s\n", tx.Error.Error())
-		c.AbortWithStatus(http.StatusInternalServerError)
-	}
-}
-
-func createCustomerHandler(ctx *gin.Context) {
-	var c customer.Customer
-	if err := ctx.BindJSON(&c); err != nil {
-		return
-	}
-
-	if err := c.Validate(); err != nil {
-		_ = ctx.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-
-	tx := db.DB.Create(&c)
-	if tx.Error != nil {
-		logging.ErrorLogger.Printf("error writing into DB: %s\n", tx.Error.Error())
-		return
-	}
-
-	cs, _ := json.Marshal(c)
-	logging.InfoLogger.Printf("%s : %s", ctx.Request.Header.Get(tracing.XRequestID), string(cs))
-
-	ctx.Status(http.StatusCreated)
 }
 
 func main() {
@@ -124,5 +53,5 @@ func main() {
 	_ = r.Run(":8080")
 }
 
-// TODO CRON https://github.com/robfig/cron
+// TODO CRON https://github.com/robfig/cron or https://github.com/go-co-op/gocron
 // TODO MORE TESTS
