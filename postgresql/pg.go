@@ -11,12 +11,14 @@ type (
 	// Db is the closest representation to the database level.
 	// Used to mock dao calls.
 	Db interface {
-		// Create handles calls to &gorm.DB.Create(*customer.Customer)
+		// Create handles calls to &gorm.DB.Create()
 		Create(*customer.Customer) *gorm.DB
-		// Migrate handles calls to &gorm.DB.Automigrate(*customer.Customer)
+		// Migrate handles calls to &gorm.DB.Automigrate()
 		Migrate(*customer.Customer) error
-		// Delete handles calls to &gorm.DB.Delete(*customer.Customer, ...interface{})
+		// Delete handles calls to &gorm.DB.Delete()
 		Delete(*customer.Customer, int64) *gorm.DB
+		// First handles calls to &gorm.DB.First()
+		First(int64) (customer.Customer, *gorm.DB)
 	}
 	DBase struct {
 		Tx *gorm.DB
@@ -48,4 +50,9 @@ func (d *DBase) Create(customer *customer.Customer) *gorm.DB {
 
 func (d *DBase) Delete(c *customer.Customer, id int64) *gorm.DB {
 	return d.Tx.Delete(c, id)
+}
+
+func (d *DBase) First(id int64) (c customer.Customer, tx *gorm.DB) {
+	tx = d.Tx.First(c, id)
+	return
 }
