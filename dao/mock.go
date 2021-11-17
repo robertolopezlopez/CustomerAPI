@@ -21,3 +21,8 @@ func (pg *CustomerDaoMock) MigrateModels() error {
 	args := pg.Called()
 	return args.Error(0)
 }
+
+func (pg *CustomerDaoMock) Delete(c *customer.Customer, id int64) error {
+	args := pg.Called(c, id)
+	return args.Error(0)
+}

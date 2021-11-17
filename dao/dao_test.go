@@ -46,8 +46,8 @@ func TestDao_Create(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			pg := CustomerDao{Db: test.db}
-			err := pg.Create(test.input)
+			dao := CustomerDAO{Db: test.db}
+			err := dao.Create(test.input)
 			if test.withError != nil {
 				require.Error(t, err)
 				assert.True(t, errors.Is(err, test.withError))
@@ -82,13 +82,50 @@ func TestDao_MigrateModels(t *testing.T) {
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			orm := CustomerDao{Db: test.db}
-			err := orm.MigrateModels()
+			dao := CustomerDAO{Db: test.db}
+			err := dao.MigrateModels()
 			if test.withError != nil {
 				assert.Regexp(t, err, test.withError)
 				return
 			}
 			require.NoError(t, err)
+			test.db.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCustomerDAO_Delete(t *testing.T) {
+	tests := map[string]struct {
+		db        *postgresql.DataBaseMock
+		withError error
+	}{
+		"OK deletion": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("Delete", mock.Anything, mock.Anything).Return(nil)
+				return &m
+			}(),
+		},
+		"NOK deletion": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("Delete", mock.Anything, mock.Anything).Return(fmt.Errorf("an error"))
+				return &m
+			}(),
+			withError: ErrPg,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			dao := CustomerDAO{Db: test.db}
+			err := dao.Delete(&customer.Customer{}, 1)
+			if test.withError != nil {
+				require.Error(t, err)
+				assert.True(t, errors.Is(err, test.withError))
+				return
+			}
+			require.NoError(t, err)
+			test.db.AssertExpectations(t)
 		})
 	}
 }

@@ -20,3 +20,8 @@ func (d *DataBaseMock) Migrate(customer *customer.Customer) error {
 	args := d.Called(customer)
 	return args.Error(0)
 }
+
+func (d *DataBaseMock) Delete(customer *customer.Customer, id int64) *gorm.DB {
+	args := d.Called(customer, id)
+	return &gorm.DB{Error: args.Error(0)}
+}

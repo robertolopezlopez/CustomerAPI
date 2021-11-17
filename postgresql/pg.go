@@ -15,6 +15,8 @@ type (
 		Create(*customer.Customer) *gorm.DB
 		// Migrate handles calls to &gorm.DB.Automigrate(*customer.Customer)
 		Migrate(*customer.Customer) error
+		// Delete handles calls to &gorm.DB.Delete(*customer.Customer, ...interface{})
+		Delete(*customer.Customer, int64) *gorm.DB
 	}
 	DBase struct {
 		Tx *gorm.DB
@@ -42,4 +44,8 @@ func (d *DBase) Migrate(customer *customer.Customer) error {
 
 func (d *DBase) Create(customer *customer.Customer) *gorm.DB {
 	return d.Tx.Create(customer)
+}
+
+func (d *DBase) Delete(c *customer.Customer, id int64) *gorm.DB {
+	return d.Tx.Delete(c, id)
 }
