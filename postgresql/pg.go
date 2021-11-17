@@ -8,22 +8,21 @@ import (
 )
 
 type (
-	// Connection is the closest representation to the database level.
-	// Used to mock db calls.
-	Connection interface {
+	// Db is the closest representation to the database level.
+	// Used to mock dao calls.
+	Db interface {
 		// Create handles calls to &gorm.DB.Create(*customer.Customer)
 		Create(*customer.Customer) *gorm.DB
 		// Migrate handles calls to &gorm.DB.Automigrate(*customer.Customer)
 		Migrate(*customer.Customer) error
 	}
-
-	DataBase struct {
-		db *gorm.DB
+	DBase struct {
+		Tx *gorm.DB
 	}
 )
 
 var (
-	DB *DataBase
+	DB *DBase
 )
 
 func init() {
@@ -34,13 +33,13 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	DB = &DataBase{db: pg}
+	DB = &DBase{Tx: pg}
 }
 
-func (d *DataBase) Create(customer *customer.Customer) *gorm.DB {
-	return d.db.Create(customer)
+func (d *DBase) Migrate(customer *customer.Customer) error {
+	return d.Tx.AutoMigrate(customer)
 }
 
-func (d *DataBase) Migrate(customer *customer.Customer) error {
-	return d.db.AutoMigrate(customer)
+func (d *DBase) Create(customer *customer.Customer) *gorm.DB {
+	return d.Tx.Create(customer)
 }
