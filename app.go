@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/authentication"
+	"api/dao"
 	"api/handler"
 	"api/logging"
 	"api/tracing"
@@ -21,6 +22,10 @@ func init() {
 	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 }
 
+var (
+	C = &handler.CustomerHandler{DAO: dao.DAO}
+)
+
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
@@ -33,7 +38,7 @@ func SetupRouter() *gin.Engine {
 	})
 
 	// create a client entry
-	r.POST("/api/clients", handler.CreateCustomerHandler)
+	r.POST("/api/clients", C.CreateCustomer)
 
 	// Get client by id
 	r.GET("/api/clients/:id", handler.GetCustomerHandler)
@@ -48,9 +53,11 @@ func SetupRouter() *gin.Engine {
 }
 
 func main() {
-	r := SetupRouter()
-	// Listen and Server in 0.0.0.0:8080
-	_ = r.Run(":8080")
+	if err := C.DAO.MigrateModels(); err != nil {
+		panic(err)
+	}
+	// Listen and serve in 0.0.0.0:8080
+	_ = SetupRouter().Run(":8080")
 }
 
 // TODO CRON https://github.com/robfig/cron or https://github.com/go-co-op/gocron

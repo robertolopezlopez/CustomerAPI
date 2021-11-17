@@ -10,6 +10,8 @@ const (
 	AppLog = "app.log"
 )
 
+// todo wrap logger usage with an interface
+
 var (
 	InfoLogger  *log.Logger
 	WarnLogger  *log.Logger

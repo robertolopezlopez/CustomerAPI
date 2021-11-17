@@ -7,11 +7,11 @@ import (
 
 type Customer struct {
 	gorm.Model
-	Email      string `json:"email,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Content    string `json:"content,omitempty"`
-	MailingID  int64  `json:"mailing_id,omitempty"`
-	InsertTime string `json:"insert_time,omitempty"`
+	Email      string `json:"email,omitempty" gorm:"uniqueIndex:idx_multi"`
+	Title      string `json:"title,omitempty" gorm:"uniqueIndex:idx_multi"`
+	Content    string `json:"content,omitempty" gorm:"uniqueIndex:idx_multi"`
+	MailingID  int64  `json:"mailing_id,omitempty" gorm:"uniqueIndex:idx_multi"`
+	InsertTime string `json:"insert_time,omitempty" gorm:"uniqueIndex:idx_multi"`
 }
 
 // todo replace ozzo-validation
