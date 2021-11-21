@@ -5,8 +5,11 @@ import (
 	"api/postgresql"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"testing"
+
+	"gorm.io/gorm"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -47,7 +50,7 @@ func TestDao_Create(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			dao := CustomerDAO{Db: test.db}
-			err := dao.Create(test.input)
+			err := dao.Create(&test.input)
 			if test.withError != nil {
 				require.Error(t, err)
 				assert.True(t, errors.Is(err, test.withError))
@@ -125,6 +128,112 @@ func TestCustomerDAO_Delete(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			test.db.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCustomerDAO_First(t *testing.T) {
+	tests := map[string]struct {
+		id        int64
+		c         customer.Customer
+		withError *regexp.Regexp
+		db        *postgresql.DataBaseMock
+	}{
+		"ok": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("First", int64(1)).Return(customer.Customer{
+					Model:     gorm.Model{ID: 1},
+					Email:     "oroparece@platano.es",
+					Title:     "a client",
+					MailingID: 1,
+				}, nil)
+				return &m
+			}(),
+			c: customer.Customer{
+				Email:     "oroparece@platano.es",
+				Title:     "a client",
+				MailingID: 1,
+				Model:     gorm.Model{ID: 1},
+			},
+		},
+		"not ok, db error": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("First", int64(1)).Return(nil, fmt.Errorf("an error"))
+				return &m
+			}(),
+			withError: regexp.MustCompile("database error: first: an error"),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			dao := CustomerDAO{Db: test.db}
+			c, err := dao.First(1)
+			if test.withError != nil {
+				require.Error(t, err)
+				assert.Regexp(t, test.withError, err.Error())
+				return
+			}
+			require.NoError(t, err)
+
+			assert.Equal(t, test.c.ID, c.ID)
+			assert.Equal(t, test.c.Title, c.Title)
+			assert.Equal(t, test.c.MailingID, c.MailingID)
+			assert.Equal(t, test.c.Content, c.Content)
+
+			test.db.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCustomerDAO_Find(t *testing.T) {
+	tests := map[string]struct {
+		db        *postgresql.DataBaseMock
+		withError *regexp.Regexp
+		expected  []customer.Customer
+	}{
+		"ok": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("Find").Return([]customer.Customer{{
+					Email:     "oroparece@platano.es",
+					Title:     "a client",
+					MailingID: 1,
+					Model:     gorm.Model{ID: 1},
+				}}, nil).Once()
+				return &m
+			}(),
+			expected: []customer.Customer{{
+				Email:     "oroparece@platano.es",
+				Title:     "a client",
+				MailingID: 1,
+				Model:     gorm.Model{ID: 1},
+			}},
+		},
+		"db returns an error": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("Find").Return([]customer.Customer{}, fmt.Errorf("an error")).Once()
+				return &m
+			}(),
+			withError: regexp.MustCompile("database error: find: an error"),
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			dao := CustomerDAO{Db: test.db}
+			cs, err := dao.Find()
+			if test.withError != nil {
+				require.Error(t, err)
+				assert.Regexp(t, test.withError, err.Error())
+				return
+			}
+			require.NoError(t, err)
+			assert.True(t, reflect.DeepEqual(cs, test.expected))
+
 			test.db.AssertExpectations(t)
 		})
 	}

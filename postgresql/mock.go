@@ -28,11 +28,14 @@ func (d *DataBaseMock) Delete(customer *customer.Customer, id int64) *gorm.DB {
 
 func (d *DataBaseMock) First(id int64) (c customer.Customer, tx *gorm.DB) {
 	args := d.Called(id)
-	tx = &gorm.DB{Error: args.Error(0)}
+	tx = &gorm.DB{Error: args.Error(1)}
 	if tx.Error == nil {
-		c = customer.Customer{
-			Model: gorm.Model{ID: uint(id)},
-		}
+		c = args.Get(0).(customer.Customer)
 	}
 	return
+}
+
+func (d *DataBaseMock) Find() ([]customer.Customer, *gorm.DB) {
+	args := d.Called()
+	return args.Get(0).([]customer.Customer), &gorm.DB{Error: args.Error(1)}
 }
