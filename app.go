@@ -41,13 +41,13 @@ func SetupRouter() *gin.Engine {
 	r.POST("/api/clients", C.CreateCustomer)
 
 	// Get client by id
-	r.GET("/api/clients/:id", handler.GetCustomerHandler)
+	r.GET("/api/clients/:id", C.GetCustomer)
 
 	// Delete client by id
-	r.DELETE("/api/clients/:id", handler.DeleteCustomerHandler)
+	r.DELETE("/api/clients/:id", C.DeleteCustomer)
 
 	// Get all clients
-	r.GET("/api/clients/", handler.FindCustomersHandler)
+	r.GET("/api/clients/", C.FindCustomers)
 
 	return r
 }

@@ -16,7 +16,14 @@ import (
 
 type (
 	customerHandler interface {
-		CreateCustomer(ctx *gin.Context) error
+		// CreateCustomer handles POST /api/clients
+		CreateCustomer(*gin.Context)
+		// GetCustomer handles GET /api/clients/:id
+		GetCustomer(*gin.Context)
+		// DeleteCustomer handles DELETE /api/clients/:id
+		DeleteCustomer(*gin.Context)
+		// FindCustomers handles GET /api/clients
+		FindCustomers(*gin.Context)
 	}
 
 	CustomerHandler struct {
@@ -24,25 +31,26 @@ type (
 	}
 )
 
-func GetCustomerHandler(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Params.ByName("id"), 10, 64)
+func (c *CustomerHandler) GetCustomer(ctx *gin.Context) {
+	id, err := strconv.ParseInt(ctx.Params.ByName("id"), 10, 64)
 	if err != nil {
-		logging.WarnLogger.Printf("%s: %s", c.Request.Header.Get(tracing.XRequestID), err.Error())
-		c.AbortWithError(http.StatusBadRequest, err)
+		logging.WarnLogger.Printf("%s: %s", ctx.Request.Header.Get(tracing.XRequestID), err.Error())
+		_ = ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	cust, err := dao.DAO.First(id)
-	if err == nil {
-		c.IndentedJSON(http.StatusOK, cust)
-	} else {
-		if errors.Is(err, logger.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-		logging.ErrorLogger.Printf("error querying the DB: %s\n", err.Error())
-		c.AbortWithStatus(http.StatusInternalServerError)
+	if errors.Is(err, logger.ErrRecordNotFound) {
+		ctx.AbortWithStatus(http.StatusNotFound)
+		return
 	}
+	if err != nil {
+		logging.ErrorLogger.Printf("error querying the DB: %s\n", err.Error())
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, cust)
 }
 
 func (c *CustomerHandler) CreateCustomer(ctx *gin.Context) {
@@ -57,7 +65,7 @@ func (c *CustomerHandler) CreateCustomer(ctx *gin.Context) {
 		return
 	}
 
-	err := c.DAO.Create(newCustomer)
+	err := c.DAO.Create(&newCustomer)
 	if err != nil {
 		if errors.Is(err, dao.ErrPgIndex) {
 			logging.WarnLogger.Printf("%s: %s", ctx.Request.Header.Get(tracing.XRequestID), err.Error())
@@ -79,32 +87,31 @@ func (c *CustomerHandler) CreateCustomer(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
-func DeleteCustomerHandler(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Params.ByName("id"), 10, 64)
+func (c *CustomerHandler) DeleteCustomer(ctx *gin.Context) {
+	id, err := strconv.ParseInt(ctx.Params.ByName("id"), 10, 64)
 	if err != nil {
-		logging.WarnLogger.Printf("%s: %s", c.Request.Header.Get(tracing.XRequestID), err.Error())
-		// todo how to use AborWithError?
-		c.AbortWithError(http.StatusBadRequest, err)
+		logging.WarnLogger.Printf("%s: %s", ctx.Request.Header.Get(tracing.XRequestID), err.Error())
+		_ = ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	err = dao.DAO.Delete(&customer.Customer{}, id)
-	if err == nil {
-		c.Status(http.StatusNoContent)
-	} else {
+	if err != nil {
 		logging.ErrorLogger.Printf("error deleting from the DB: %s\n", err.Error())
-		c.AbortWithStatus(http.StatusInternalServerError)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
 	}
+
+	ctx.Status(http.StatusNoContent)
 }
 
-func FindCustomersHandler(c *gin.Context) {
+func (c *CustomerHandler) FindCustomers(ctx *gin.Context) {
 	var customers []customer.Customer
-	// todo gorm with pagination FindInBatches
-	err := dao.DAO.Find(&customers)
-	if err == nil {
-		c.IndentedJSON(http.StatusOK, customers)
-	} else {
+	// todo pagination
+	_, err := dao.DAO.Find()
+	if err != nil {
 		logging.WarnLogger.Printf("error querying the DB: %s\n", err.Error())
-		c.AbortWithStatus(http.StatusInternalServerError)
+		ctx.AbortWithStatus(http.StatusInternalServerError)
 	}
+
+	ctx.IndentedJSON(http.StatusOK, customers)
 }
