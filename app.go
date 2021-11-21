@@ -16,7 +16,6 @@ import (
 )
 
 func init() {
-	// todo move this logic to logging package
 	f, err := os.OpenFile(logging.GinLog, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -51,7 +50,8 @@ func SetupRouter() *gin.Engine {
 	// Get all clients
 	r.GET("/api/clients", C.FindCustomers)
 
-	// todo POST /api/clients/send {mailing_id: 1} to write a log message and delete all customers with given
+	// Send mail to all clients with the same mailing_id
+	r.POST("/api/clients/send", C.MailClients)
 
 	return r
 }

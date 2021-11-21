@@ -6,13 +6,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type Customer struct {
-	gorm.Model
-	Email     string `json:"email,omitempty" gorm:"uniqueIndex:idx_multi"`
-	Title     string `json:"title,omitempty" gorm:"uniqueIndex:idx_multi"`
-	Content   string `json:"content,omitempty" gorm:"uniqueIndex:idx_multi"`
-	MailingID int64  `json:"mailing_id,omitempty" gorm:"uniqueIndex:idx_multi"`
-}
+type (
+	Customer struct {
+		gorm.Model
+		Email     string `json:"email,omitempty" gorm:"uniqueIndex:idx_multi"`
+		Title     string `json:"title,omitempty" gorm:"uniqueIndex:idx_multi"`
+		Content   string `json:"content,omitempty" gorm:"uniqueIndex:idx_multi"`
+		MailingID int64  `json:"mailing_id,omitempty" gorm:"uniqueIndex:idx_multi"`
+	}
+)
 
 func (c *Customer) Validate() error {
 	return validation.Errors{

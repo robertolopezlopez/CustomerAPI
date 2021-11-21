@@ -45,3 +45,8 @@ func (dao *CustomerDaoMock) DeleteOld(seconds int) (int64, error) {
 	args := dao.Called(seconds)
 	return args.Get(0).(int64), args.Error(1)
 }
+
+func (dao *CustomerDaoMock) DeleteByMailingID(mailingID int64) (int64, error) {
+	args := dao.Called(mailingID)
+	return args.Get(0).(int64), args.Error(1)
+}

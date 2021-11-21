@@ -24,6 +24,12 @@ type (
 		DeleteCustomer(*gin.Context)
 		// FindCustomers handles GET /api/clients
 		FindCustomers(*gin.Context)
+		// MailClients handles POST /api/clients/send to delete all clients with the same mailing ID
+		MailClients(*gin.Context)
+	}
+
+	MailClientsRequest struct {
+		MailingID int64 `json:"mailing_id"`
 	}
 
 	CustomerHandler struct {
@@ -55,6 +61,7 @@ func (c *CustomerHandler) GetCustomer(ctx *gin.Context) {
 func (c *CustomerHandler) CreateCustomer(ctx *gin.Context) {
 	var newCustomer customer.Customer
 	if err := ctx.BindJSON(&newCustomer); err != nil {
+		_ = ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -112,4 +119,26 @@ func (c *CustomerHandler) FindCustomers(ctx *gin.Context) {
 	}
 
 	ctx.IndentedJSON(http.StatusOK, customers)
+}
+
+func (c *CustomerHandler) MailClients(ctx *gin.Context) {
+	var request MailClientsRequest
+	if err := ctx.BindJSON(&request); err != nil {
+		logging.WarnLogger.Printf("%s: %s", ctx.Request.Header.Get(tracing.XRequestID), err.Error())
+		_ = ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	// sending message
+	logging.InfoLogger.Printf("deleting all customers with mailing id %d", request.MailingID)
+
+	rows, err := dao.DAO.DeleteByMailingID(request.MailingID)
+	if err != nil {
+		logging.ErrorLogger.Printf("%s: %s", ctx.Request.Header.Get(tracing.XRequestID), err.Error())
+		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	logging.InfoLogger.Printf("%d customers were deleted", rows)
+
+	ctx.Status(http.StatusNoContent)
 }

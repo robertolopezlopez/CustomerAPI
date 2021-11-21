@@ -3,6 +3,7 @@ package postgresql
 import (
 	"api/customer"
 	"fmt"
+	"strconv"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -24,6 +25,8 @@ type (
 		Find() ([]customer.Customer, *gorm.DB)
 		// DeleteOld removes old entries from database (soft delete)
 		DeleteOld(int) *gorm.DB
+		// DeleteByMailingID removes entries from database with the given mailingID (soft delete)
+		DeleteByMailingID(int64) *gorm.DB
 	}
 	DBase struct {
 		Tx *gorm.DB
@@ -69,4 +72,8 @@ func (d *DBase) Find() (cs []customer.Customer, tx *gorm.DB) {
 
 func (d *DBase) DeleteOld(seconds int) *gorm.DB {
 	return d.Tx.Where(fmt.Sprintf("CreatedAt < NOW() - %d", seconds)).Delete(&customer.Customer{})
+}
+
+func (d *DBase) DeleteByMailingID(mailingID int64) *gorm.DB {
+	return d.Tx.Where("mailingID = ?", strconv.FormatInt(mailingID, 10)).Delete(customer.Customer{})
 }

@@ -27,6 +27,9 @@ type (
 
 		// DeleteOld handles removal of database entries older than 5 minutes
 		DeleteOld(int) (int64, error)
+
+		// DeleteByMailingID deletes all customers with the given mailingID
+		DeleteByMailingID(int64) (int64, error)
 	}
 
 	CustomerDAO struct {
@@ -79,6 +82,14 @@ func (dao *CustomerDAO) Find() ([]customer.Customer, error) {
 
 func (dao *CustomerDAO) DeleteOld(seconds int) (int64, error) {
 	tx := dao.Db.DeleteOld(seconds)
+	if tx.Error != nil {
+		return tx.RowsAffected, fmt.Errorf("%w: delete old: %s", ErrPg, tx.Error.Error())
+	}
+	return tx.RowsAffected, tx.Error
+}
+
+func (dao *CustomerDAO) DeleteByMailingID(mailingID int64) (int64, error) {
+	tx := dao.Db.DeleteByMailingID(mailingID)
 	if tx.Error != nil {
 		return tx.RowsAffected, fmt.Errorf("%w: delete old: %s", ErrPg, tx.Error.Error())
 	}

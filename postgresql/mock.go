@@ -11,6 +11,14 @@ type DataBaseMock struct {
 	mock.Mock
 }
 
+func (d *DataBaseMock) DeleteByMailingID(mailingID int64) *gorm.DB {
+	args := d.Called(mailingID)
+	return &gorm.DB{
+		RowsAffected: args.Get(0).(int64),
+		Error:        args.Error(1),
+	}
+}
+
 func (d *DataBaseMock) Create(customer *customer.Customer) *gorm.DB {
 	args := d.Called(customer)
 	return &gorm.DB{Error: args.Error(0)}

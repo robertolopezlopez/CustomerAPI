@@ -4,6 +4,7 @@ import (
 	"api/authentication"
 	"api/customer"
 	"api/dao"
+	"api/handler"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -230,6 +231,82 @@ func TestCreateCustomer(t *testing.T) {
 				panic(err.Error())
 			}
 			req, _ := http.NewRequest(http.MethodPost, "/api/clients", bytes.NewBuffer(bodyBytes))
+			for key, value := range oKheaders {
+				req.Header.Add(key, value)
+			}
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, test.expectedCode, w.Code)
+
+			test.m.AssertExpectations(t)
+		})
+	}
+}
+
+func TestDeleteByMailingID_badBody(t *testing.T) {
+
+	type mailClientRequest struct {
+		MailingID string `json:"mailing_id"`
+	}
+	t.Run("bad request", func(t *testing.T) {
+		m := &dao.CustomerDaoMock{}
+		dao.DAO = m
+		router := SetupRouter()
+		w := httptest.NewRecorder()
+
+		body := mailClientRequest{}
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			panic(err.Error())
+		}
+		req, _ := http.NewRequest(http.MethodPost, "/api/clients/send", bytes.NewBuffer(bodyBytes))
+		for key, value := range oKheaders {
+			req.Header.Add(key, value)
+		}
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		m.AssertExpectations(t)
+	})
+}
+
+func TestMailClients(t *testing.T) {
+	tests := map[string]struct {
+		m            *dao.CustomerDaoMock
+		expectedCode int
+	}{
+		"500 server error": {
+			m: func() *dao.CustomerDaoMock {
+				d := dao.CustomerDaoMock{}
+				d.On("DeleteByMailingID", mock.Anything).Return(int64(0), errors.New("an error"))
+				return &d
+			}(),
+			expectedCode: http.StatusInternalServerError,
+		},
+		"204 no content": {
+			m: func() *dao.CustomerDaoMock {
+				d := dao.CustomerDaoMock{}
+				d.On("DeleteByMailingID", mock.Anything).Return(int64(1), nil)
+				return &d
+			}(),
+			expectedCode: http.StatusNoContent,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			dao.DAO = test.m
+			router := SetupRouter()
+			w := httptest.NewRecorder()
+
+			body := handler.MailClientsRequest{}
+			bodyBytes, err := json.Marshal(body)
+			if err != nil {
+				panic(err.Error())
+			}
+			req, _ := http.NewRequest(http.MethodPost, "/api/clients/send", bytes.NewBuffer(bodyBytes))
 			for key, value := range oKheaders {
 				req.Header.Add(key, value)
 			}
