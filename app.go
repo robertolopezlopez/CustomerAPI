@@ -51,6 +51,8 @@ func SetupRouter() *gin.Engine {
 	// Get all clients
 	r.GET("/api/clients/", C.FindCustomers)
 
+	// todo POST /api/clients/send {mailing_id: 1} to write a log message and delete all customers with given
+
 	return r
 }
 
