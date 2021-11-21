@@ -238,3 +238,41 @@ func TestCustomerDAO_Find(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteOld(t *testing.T) {
+	tests := map[string]struct {
+		withError    *regexp.Regexp
+		db           *postgresql.DataBaseMock
+		rowsAffected int64
+	}{
+		"ok": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("DeleteOld", 1).Return(int64(1), nil)
+				return &m
+			}(),
+			rowsAffected: 1,
+		},
+		"nok, orm error": {
+			db: func() *postgresql.DataBaseMock {
+				m := postgresql.DataBaseMock{}
+				m.On("DeleteOld", 1).Return(int64(0), fmt.Errorf("an error"))
+				return &m
+			}(),
+			withError: regexp.MustCompile("database error: delete old: an error"),
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			dao := CustomerDAO{Db: test.db}
+			rowsAffected, err := dao.DeleteOld(1)
+			if test.withError != nil {
+				require.Error(t, err)
+				assert.Regexp(t, test.withError, err.Error())
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, test.rowsAffected, rowsAffected)
+		})
+	}
+}

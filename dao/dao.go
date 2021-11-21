@@ -24,6 +24,9 @@ type (
 
 		// Find retrieves all customer.Customer. It may return ErrPg
 		Find() ([]customer.Customer, error)
+
+		// DeleteOld handles removal of database entries older than 5 minutes
+		DeleteOld(int) (int64, error)
 	}
 
 	CustomerDAO struct {
@@ -72,4 +75,12 @@ func (dao *CustomerDAO) Find() ([]customer.Customer, error) {
 		return nil, fmt.Errorf("%w: find: %s", ErrPg, tx.Error.Error())
 	}
 	return customers, nil
+}
+
+func (dao *CustomerDAO) DeleteOld(seconds int) (int64, error) {
+	tx := dao.Db.DeleteOld(seconds)
+	if tx.Error != nil {
+		return tx.RowsAffected, fmt.Errorf("%w: delete old: %s", ErrPg, tx.Error.Error())
+	}
+	return tx.RowsAffected, tx.Error
 }

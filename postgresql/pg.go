@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"api/customer"
+	"fmt"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,12 +16,14 @@ type (
 		Create(*customer.Customer) *gorm.DB
 		// Migrate handles calls to &gorm.DB.Automigrate()
 		Migrate(*customer.Customer) error
-		// Delete handles calls to &gorm.DB.Delete()
+		// Delete does soft delete
 		Delete(*customer.Customer, int64) *gorm.DB
 		// First handles calls to &gorm.DB.First()
 		First(int64) (customer.Customer, *gorm.DB)
-		// Find handles calls to &gorm.DB.Find() to find all customers
+		// Find finds customers
 		Find() ([]customer.Customer, *gorm.DB)
+		// DeleteOld removes old entries from database (soft delete)
+		DeleteOld(int) *gorm.DB
 	}
 	DBase struct {
 		Tx *gorm.DB
@@ -62,4 +65,8 @@ func (d *DBase) First(id int64) (c customer.Customer, tx *gorm.DB) {
 func (d *DBase) Find() (cs []customer.Customer, tx *gorm.DB) {
 	tx = d.Tx.Find(&cs)
 	return
+}
+
+func (d *DBase) DeleteOld(seconds int) *gorm.DB {
+	return d.Tx.Where(fmt.Sprintf("CreatedAt < NOW() - %d", seconds)).Delete(&customer.Customer{})
 }

@@ -46,3 +46,8 @@ func (dao *CustomerDaoMock) Find() ([]customer.Customer, error) {
 	args := dao.Called()
 	return args.Get(0).([]customer.Customer), args.Error(1)
 }
+
+func (dao *CustomerDaoMock) DeleteOld(seconds int) (int64, error) {
+	args := dao.Called(seconds)
+	return args.Get(0).(int64), args.Error(1)
+}

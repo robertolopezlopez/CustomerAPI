@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/authentication"
+	"api/cron"
 	"api/dao"
 	"api/handler"
 	"api/logging"
@@ -15,6 +16,7 @@ import (
 )
 
 func init() {
+	// todo move this logic to logging package
 	f, err := os.OpenFile(logging.GinLog, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -56,9 +58,9 @@ func main() {
 	if err := C.DAO.MigrateModels(); err != nil {
 		panic(err)
 	}
+	if _, err := cron.Scheduler(); err != nil {
+		panic(err)
+	}
 	// Listen and serve in 0.0.0.0:8080
 	_ = SetupRouter().Run(":8080")
 }
-
-// TODO CRON https://github.com/robfig/cron or https://github.com/go-co-op/gocron
-// TODO MORE TESTS

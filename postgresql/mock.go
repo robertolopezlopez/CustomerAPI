@@ -37,5 +37,15 @@ func (d *DataBaseMock) First(id int64) (c customer.Customer, tx *gorm.DB) {
 
 func (d *DataBaseMock) Find() ([]customer.Customer, *gorm.DB) {
 	args := d.Called()
-	return args.Get(0).([]customer.Customer), &gorm.DB{Error: args.Error(1)}
+	return args.Get(0).([]customer.Customer), &gorm.DB{
+		Error: args.Error(1),
+	}
+}
+
+func (d *DataBaseMock) DeleteOld(seconds int) *gorm.DB {
+	args := d.Called(seconds)
+	return &gorm.DB{
+		RowsAffected: args.Get(0).(int64),
+		Error:        args.Error(1),
+	}
 }
