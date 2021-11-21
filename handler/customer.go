@@ -27,7 +27,6 @@ type (
 	}
 
 	CustomerHandler struct {
-		DAO *dao.CustomerDAO
 	}
 )
 
@@ -65,7 +64,7 @@ func (c *CustomerHandler) CreateCustomer(ctx *gin.Context) {
 		return
 	}
 
-	err := c.DAO.Create(&newCustomer)
+	err := dao.DAO.Create(&newCustomer)
 	if err != nil {
 		if errors.Is(err, dao.ErrPgIndex) {
 			logging.WarnLogger.Printf("%s: %s", ctx.Request.Header.Get(tracing.XRequestID), err.Error())
@@ -105,9 +104,8 @@ func (c *CustomerHandler) DeleteCustomer(ctx *gin.Context) {
 }
 
 func (c *CustomerHandler) FindCustomers(ctx *gin.Context) {
-	var customers []customer.Customer
 	// todo pagination
-	_, err := dao.DAO.Find()
+	customers, err := dao.DAO.Find()
 	if err != nil {
 		logging.WarnLogger.Printf("error querying the DB: %s\n", err.Error())
 		ctx.AbortWithStatus(http.StatusInternalServerError)

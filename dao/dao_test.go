@@ -273,6 +273,8 @@ func TestDeleteOld(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, test.rowsAffected, rowsAffected)
+
+			test.db.AssertExpectations(t)
 		})
 	}
 }

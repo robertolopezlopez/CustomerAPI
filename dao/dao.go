@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	customerDao interface {
+	CustomerDao interface {
 		// Create creates a new customer.Customer in the database. It may return ErrPgIndex or a generic ErrPg.
 		Create(*customer.Customer) error
 
@@ -35,9 +35,9 @@ type (
 )
 
 var (
-	DAO        = &CustomerDAO{Db: postgresql.DB}
-	ErrPgIndex = errors.New("duplicate key value for Tx index")
-	ErrPg      = errors.New("database error")
+	DAO        CustomerDao = &CustomerDAO{Db: postgresql.DB}
+	ErrPgIndex             = errors.New("duplicate key value for Tx index")
+	ErrPg                  = errors.New("database error")
 )
 
 func (dao *CustomerDAO) MigrateModels() error {

@@ -3,8 +3,6 @@ package dao
 import (
 	"api/customer"
 
-	"gorm.io/gorm"
-
 	"github.com/stretchr/testify/mock"
 )
 
@@ -16,11 +14,7 @@ type (
 
 func (dao *CustomerDaoMock) Create(c *customer.Customer) error {
 	args := dao.Called(c)
-	err := args.Error(0)
-	if err == nil {
-		c = args.Get(0).(*customer.Customer)
-	}
-	return err
+	return args.Error(0)
 }
 
 func (dao *CustomerDaoMock) MigrateModels() error {
@@ -35,11 +29,11 @@ func (dao *CustomerDaoMock) Delete(c *customer.Customer, id int64) error {
 
 func (dao *CustomerDaoMock) First(id int64) (*customer.Customer, error) {
 	args := dao.Called(id)
-	err := args.Error(1)
-	if err != nil {
-		return nil, err
+	first := args.Get(0)
+	if first == nil {
+		return nil, args.Error(1)
 	}
-	return &customer.Customer{Model: gorm.Model{ID: uint(id)}}, nil
+	return first.(*customer.Customer), args.Error(1)
 }
 
 func (dao *CustomerDaoMock) Find() ([]customer.Customer, error) {

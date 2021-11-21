@@ -25,7 +25,7 @@ func init() {
 }
 
 var (
-	C = &handler.CustomerHandler{DAO: dao.DAO}
+	C = &handler.CustomerHandler{}
 )
 
 func SetupRouter() *gin.Engine {
@@ -49,7 +49,7 @@ func SetupRouter() *gin.Engine {
 	r.DELETE("/api/clients/:id", C.DeleteCustomer)
 
 	// Get all clients
-	r.GET("/api/clients/", C.FindCustomers)
+	r.GET("/api/clients", C.FindCustomers)
 
 	// todo POST /api/clients/send {mailing_id: 1} to write a log message and delete all customers with given
 
@@ -57,7 +57,7 @@ func SetupRouter() *gin.Engine {
 }
 
 func main() {
-	if err := C.DAO.MigrateModels(); err != nil {
+	if err := dao.DAO.MigrateModels(); err != nil {
 		panic(err)
 	}
 	if _, err := cron.Scheduler(); err != nil {
