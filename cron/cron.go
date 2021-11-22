@@ -8,13 +8,14 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
-// Scheduler configures all periodic tasks
+// Scheduler configures and starts the scheduler asynchronously
 func Scheduler() (*gocron.Scheduler, error) {
 	s := gocron.NewScheduler(time.UTC)
 	_, err := s.Every(1).Second().Tag("clean up old entries").Do(deleteOldEntries)
 	if err != nil {
 		return nil, err
 	}
+	s.StartAsync()
 	return s, nil
 }
 
