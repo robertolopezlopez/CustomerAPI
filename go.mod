@@ -4,8 +4,8 @@ go 1.16
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/gin-gonic/gin v1.7.4
-	github.com/go-co-op/gocron v1.9.0 // indirect
+	github.com/gin-gonic/gin v1.7.7
+	github.com/go-co-op/gocron v1.9.0
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
